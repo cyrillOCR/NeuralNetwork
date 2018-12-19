@@ -2,8 +2,7 @@ import json
 import keras
 import collections
 import numpy as np
-
-from keras.layers import InputLayer, Dense, Dropout
+from keras.layers import InputLayer, Dense
 
 
 def flatten(x):
@@ -35,6 +34,11 @@ for index, label in enumerate(labels_set):
     labels_mapping[label] = index
     labels_mapping_reverse[index] = label
 
+l1 = open("labelsset.txt", "w", encoding="utf-8")
+for e in labels_set:
+    l1.write(e)
+    l1.write("\n")
+
 features = features[:446]
 labels = [labels_mapping[label] for label in labels]
 
@@ -48,11 +52,13 @@ y_test = keras.utils.to_categorical(labels[:50], num_classes=33)
 model = keras.models.Sequential()
 keras.initializers.VarianceScaling(scale=1.0, mode='fan_in', distribution='normal', seed=None)
 model.add(InputLayer(input_shape=(5824,)))
-model.add(Dense(2000, input_shape=(5824,), activation="relu"))
+model.add(Dense(1000, input_shape=(5824,), activation="relu"))
+model.add(Dense(100, input_shape=(5824,), activation="relu"))
 model.add(Dense(33, input_shape=(5824,), activation="softmax"))
 
-model.compile(optimizer=keras.optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True),
+model.compile(optimizer=keras.optimizers.Adadelta(),
               loss="categorical_crossentropy",
               metrics=["accuracy"])
-model.fit(x_train, y_train, epochs=200, batch_size=5)
-model.save('my_model.h5')
+model.fit(x_train, y_train, epochs=20, batch_size=5)
+
+keras.models.save_model(model, "saved_model.h5", overwrite=True, include_optimizer=True)

@@ -2,7 +2,6 @@ import json
 import collections
 import numpy as np
 import keras
-from keras.models import load_model
 
 
 def flatten(x):
@@ -26,8 +25,16 @@ labels = []
 for line in f:
     line = line.replace("\n", "")
     labels.append(line)
+f.close()
 
-labels_set = set(labels)
+f = open("labelsset.txt", "r", encoding="utf-8")
+labels_set= []
+for line in f:
+    line = line.replace("\n", "")
+    labels_set.append(line)
+f.close()
+
+
 labels_mapping = dict()
 labels_mapping_reverse = dict()
 for index, label in enumerate(labels_set):
@@ -40,17 +47,20 @@ labels = [labels_mapping[label] for label in labels]
 features = np.array(features)
 features = features / 128
 
-y = keras.utils.to_categorical(labels[:50], num_classes=33)
+y = keras.utils.to_categorical(labels[0:50], num_classes=33)
 
-model = load_model("my_model.h5")
-loss, accuracy = model.evaluate(features[0:50],y[0:50])
-print("Loss: {}; Acc: {}".format(loss, accuracy))
-predictions = model.predict(features[0:50])
-predictions = predictions.argmax(axis=-1)
-predictions = np.ndarray.tolist(predictions)
+model = keras.models.load_model("saved_model.h5")
+
+loss, accuracy = model.evaluate(features[0:50],y)
+print("Model  Loss: {}; Acc: {}".format(loss, accuracy))
+predictions = model.predict_classes(features[0:50])
 predictions = [labels_mapping_reverse[index] for index in predictions]
 print(predictions)
 prediction = "".join(predictions)
+
+f = open("traducere.json","w")
+json.dump(predictions,f)
+f.close()
 
 actual = [labels_mapping_reverse[index] for index in labels[0:50]]
 actual_str = "".join(actual)
