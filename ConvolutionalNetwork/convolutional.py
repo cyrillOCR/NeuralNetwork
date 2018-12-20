@@ -1,100 +1,70 @@
 from keras.preprocessing.image import ImageDataGenerator
+from keras.datasets import mnist
+from keras.utils import to_categorical
+from keras.models import Model
 from keras.models import Sequential
 from keras.layers import Conv2D, MaxPooling2D
-from keras.layers import Activation, Dropout, Flatten, Dense
+from keras.layers import Activation, Dropout, Flatten, Dense, Input
 from keras import backend as K
 from keras.optimizers import Adadelta, RMSprop, SGD
 import numpy as np
 
 # dimensions of our images.
-img_width, img_height = 150, 150
-
-train_data_dir = 'data/train'
-validation_data_dir = 'data/validation'
-test_data_dir = 'data/test'
-nb_train_samples = 100
-nb_validation_samples = 50
-epochs = 10
-batch_size = 5
-
+img_width, img_height = (28, 28)
+# set parameters
+N_LABELED = 256
+N_UNLABELED = 4 * 1024
+EPOCHS = 10
+BATCH_SIZE = 8
+# make program compatible with both theano and tf
 if K.image_data_format() == 'channels_first':
-    input_shape = (3, img_width, img_height)
+    input_shape = (1, img_width, img_height)
 else:
-    input_shape = (img_width, img_height, 3)
-
-model = Sequential()
-model.add(Conv2D(32, (3, 3), input_shape=input_shape))
-model.add(Activation('relu'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
-
-model.add(Conv2D(32, (3, 3)))
-model.add(Activation('relu'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
-
-model.add(Conv2D(64, (3, 3)))
-model.add(Activation('relu'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
-
-model.add(Flatten())
-model.add(Dense(64))
-model.add(Activation('relu'))
-model.add(Dropout(0.5))
-model.add(Dense(4))
-model.add(Activation('softmax'))
-
-model.compile(loss='categorical_crossentropy',
-              optimizer=Adadelta(),
-              metrics=['accuracy'])
-
-# this is the augmentation configuration we will use for training
-train_datagen = ImageDataGenerator(
-    rescale=1. / 255,
-    shear_range=0.2,
-    zoom_range=0.2,
-    horizontal_flip=True)
-
-# this is the augmentation configuration we will use for testing:
-# only rescaling
-test_datagen = ImageDataGenerator(rescale=1. / 255)
-
-train_generator = train_datagen.flow_from_directory(
-    train_data_dir,
-    target_size=(img_width, img_height),
-    batch_size=batch_size,
-    class_mode='categorical')
-
-validation_generator = test_datagen.flow_from_directory(
-    validation_data_dir,
-    target_size=(img_width, img_height),
-    batch_size=batch_size,
-    class_mode='categorical')
-
-model.fit_generator(
-    train_generator,
-    steps_per_epoch=nb_train_samples // batch_size,
-    epochs=epochs,
-    validation_data=validation_generator,
-    validation_steps=nb_validation_samples // batch_size)
-
-model.save_weights('first_try.h5')
-
-test_generator = ImageDataGenerator().flow_from_directory(test_data_dir,
-                                                          target_size=(img_width, img_height),
-                                                          batch_size=1,
-                                                          class_mode='categorical',
-                                                          shuffle=False)
-
-predictions = model.predict_generator(test_generator, steps=40)
-true = test_generator.classes
-predictions = np.argmax(predictions, axis=-1)
-label_map = test_generator.class_indices
-label_map = dict((v, k) for k, v in label_map.items())  # flip k,v
-predictions = [label_map[k] for k in predictions]
-true = [label_map[k] for k in true]
-filenames = test_generator.filenames
-for prediction, true, filename in zip(predictions, true, filenames):
-    print("Prediction: {} Actual:{}".format(prediction, true))
-    if prediction != true:
-        print("Gresit pentru {}".format(filename))
-
-print(model.evaluate_generator(test_generator, steps=40))
+    input_shape = (img_width, img_height, 1)
+# load MNIST data
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
+# reshape and normalize
+x_train = x_train.reshape((60000,) + input_shape)
+x_train = x_train.astype('float32') / 255
+x_test = x_test.reshape((10000,) + input_shape)
+x_test = x_test.astype('float32') / 255
+# create one-hot vectors from labels
+y_train = to_categorical(y_train)
+y_test = to_categorical(y_test)
+# select N_LABELED labeled training examples
+x_train_labeled = x_train[:N_LABELED]
+y_train = y_train[:N_LABELED]
+# select N_UNLABELED unlabeled training examples
+x_train_unlabeled = x_train[N_LABELED:N_LABELED+N_UNLABELED]
+x_test_unlabeled = x_test[N_LABELED:N_LABELED+N_UNLABELED]
+x_test = x_test[N_LABELED+N_UNLABELED:]
+y_test = y_test[N_LABELED+N_UNLABELED:]
+# create neural net model
+input_img = Input(shape=input_shape)
+model = Conv2D(32, (3, 3), activation='relu', padding='same')(input_img)
+model = MaxPooling2D((2, 2), padding='same')(model)
+model = Conv2D(32, (3, 3), activation='relu', padding='same')(model)
+model = MaxPooling2D((2, 2), padding='same')(model)
+model = Flatten()(model)
+model = Dense(10, activation='softmax')(model)
+model = Model(input_img, model)
+model.compile(optimizer='adadelta',
+              loss='categorical_crossentropy',
+              metrics=['acc'])
+# save weights so that we can use them later in the experiment
+model.save_weights('weights.h5')
+avg_acc = 0.0
+for i in range(30):
+    # train model
+    model.fit(x_train_labeled, y_train,
+              batch_size=BATCH_SIZE,
+              epochs=EPOCHS,
+              verbose=0)
+    # evaluate model and get accuracy
+    test_loss, test_acc = model.evaluate(x_test, y_test)
+    print('Test accuracy:', test_acc)
+    avg_acc += test_acc
+    # reload weights so that we can retrain the model in 
+    # the next iteration
+    model.load_weights('weights.h5')
+print('Average accuracy:', avg_acc / 30)
