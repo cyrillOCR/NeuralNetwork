@@ -63,5 +63,5 @@ model.add(Dense(classes, input_shape=(input_shape,), activation="softmax"))
 model.compile(optimizer=keras.optimizers.Adam(),
               loss="categorical_crossentropy",
               metrics=["accuracy"])
-model.fit(x_train, y_train, epochs=10, batch_size=5)
+model.fit(x_train, y_train, epochs=15, batch_size=5)
 keras.models.save_model(model, "saved_model.h5", overwrite=True, include_optimizer=True)
