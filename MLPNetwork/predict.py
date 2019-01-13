@@ -1,6 +1,7 @@
 import collections
 import numpy as np
 import keras
+from keras import backend as K
 
 
 def flatten(x):
@@ -35,5 +36,6 @@ def predict(feature_dictionary):
     x_test = features
     model = keras.models.load_model("saved_model.h5")
     predictions = model.predict_classes(x_test)
+    K.clear_session()
     predictions = [labels_mapping[index] for index in predictions]
     return predictions

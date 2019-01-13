@@ -11,7 +11,7 @@ def flatten(x):
         return [x]
 
 
-file = "test_features.json"
+file = "data10.json"
 features = []
 f = open(file, "r")
 a = json.load(f)
@@ -20,7 +20,7 @@ for nested_lists in a.values():
     features.append(flat_list)
 f.close()
 
-f = open("test_labels.txt", "r", encoding="utf-8")
+f = open("labels10.txt", "r", encoding="utf-8")
 labels = []
 for line in f:
     line = line.replace("\n", "")
