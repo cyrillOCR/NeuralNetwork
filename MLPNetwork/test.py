@@ -11,7 +11,7 @@ def flatten(x):
         return [x]
 
 
-file = "data10.json"
+file = "test_features.json"
 features = []
 f = open(file, "r")
 a = json.load(f)
@@ -20,7 +20,7 @@ for nested_lists in a.values():
     features.append(flat_list)
 f.close()
 
-f = open("labels10.txt", "r", encoding="utf-8")
+f = open("test_labels.txt", "r", encoding="utf-8")
 labels = []
 for line in f:
     line = line.replace("\n", "")
@@ -66,6 +66,14 @@ f.close()
 
 actual = [labels_mapping_reverse[index] for index in y]
 actual_str = "".join(actual)
+
+file = open("replace.txt","r",encoding="utf-8")
+for line in file:
+    line = line.strip()
+    wrong_char, good_char = line.split("-")
+    prediction = prediction.replace(wrong_char,good_char)
+    actual_str = actual_str.replace(wrong_char,good_char)
+
 print("Actual string:")
 print(actual_str)
 print("Predicted string:")

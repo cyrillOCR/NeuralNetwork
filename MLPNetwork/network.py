@@ -12,34 +12,26 @@ def flatten(x):
         return [x]
 
 
-
 input_shape = 454
-files = ["data3.json","data4.json","data5.json","data6.json","data7.json","data8.json"]
+file = "training_features.json"
 features = []
-for file in files:
-    f = open(file, "r")
-    a = json.load(f)
-    for nested_lists in a.values():
-        flat_list = flatten(nested_lists)
-        features.append(flat_list)
-    f.close()
 
-files = ["labels3.txt","labels4.txt","labels5.txt","labels6.txt","labels7.txt","labels8.txt"]
+f = open(file, "r")
+a = json.load(f)
+for nested_lists in a.values():
+    flat_list = flatten(nested_lists)
+    features.append(flat_list)
+f.close()
+
+file = "training_labels.txt"
 labels = []
-for file in files:
-    f = open(file, "r", encoding="utf-8")
-    for line in f:
-        line = line.replace("\n", "")
-        labels.append(line)
-    f.close()
-#
-# labels_set = set(labels)
-# l_l = list(labels_set)
-# l_l.sort()
-# f = open("labelsset.txt","w",encoding="utf-8")
-# for el in l_l:
-#     f.write(el)
-#     f.write("\n")
+f = open(file, "r", encoding="utf-8")
+for line in f:
+    line = line.replace("\n", "")
+    labels.append(line)
+f.close()
+
+
 f = open("labelsset.txt", "r", encoding="utf-8")
 labels_set = []
 for line in f:
@@ -71,5 +63,5 @@ model.add(Dense(classes, input_shape=(input_shape,), activation="softmax"))
 model.compile(optimizer=keras.optimizers.Adam(),
               loss="categorical_crossentropy",
               metrics=["accuracy"])
-model.fit(x_train, y_train, epochs=15, batch_size=5)
+model.fit(x_train, y_train, epochs=7, batch_size=10)
 keras.models.save_model(model, "saved_model.h5", overwrite=True, include_optimizer=True)
