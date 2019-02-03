@@ -5,7 +5,7 @@ import os
 from keras import backend as K
 
 
-# transforma o lista continand mai multe liste de numere intr-o singura doar cu numere
+# transforma o lista continand mai multe liste de numere intr-o singura lista doar cu numere
 def flatten(x):
     if isinstance(x, collections.Iterable):
         return [a for i in x for a in flatten(i)]
@@ -14,7 +14,7 @@ def flatten(x):
 
 # creez un dictionar in care asignez fiecarui caracter posibil cate un id numeric
 def create_label_mapping():
-    f = open(os.path.join(os.path.dirname(os.path.abspath(__file__)),'lab.txt'), "r", encoding="utf-8")
+    f = open(os.path.join(os.path.dirname(os.path.abspath(__file__)),'labelsset.txt'), "r", encoding="utf-8")
     labels_set = []
     for line in f:
         line = line.replace("\n", "")
@@ -26,7 +26,8 @@ def create_label_mapping():
         labels_mapping[index] = label
     return labels_mapping
 
-
+# feature_dictionary - un dictionar care contine ca si valori trasaturile asociate fiecarui caracter
+# returneaza o lista de litere
 def predict(feature_dictionary):
     # creez asocierea id numeric - label
     labels_mapping = create_label_mapping()
@@ -48,4 +49,5 @@ def predict(feature_dictionary):
     K.clear_session()
     # mapez id-ul numeric al fiecarei categorii la caracterul latin careia ii corespunde
     predictions = [labels_mapping[index] for index in predictions]
+    # returnez lista de litere
     return predictions
